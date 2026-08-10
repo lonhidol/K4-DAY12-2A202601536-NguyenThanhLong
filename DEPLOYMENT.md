@@ -18,9 +18,9 @@
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://TODO-thay-bang-url-that.up.railway.app |
-| Platform | Railway / Render / Cloud Run — (điền platform bạn dùng) |
-| Ngày deploy | (điền ngày) |
+| Public URL | https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app |
+| Platform | Railway |
+| Ngày deploy | 10/08/2026 |
 
 ## Biến Môi Trường Đã Set Trên Cloud
 
@@ -42,18 +42,18 @@ Thay `<URL>` bằng Public URL ở trên:
 
 ```bash
 # 1. Liveness — mong đợi 200 {"status":"ok"}
-curl -i <URL>/healthz
+curl -i https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/healthz
 
 # 2. Readiness — mong đợi 200 {"status":"ready"} (đã nối được Redis)
-curl -i <URL>/readyz
+curl -i https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/readyz
 
 # 3. Không có token — mong đợi 401 kèm header WWW-Authenticate
-curl -i -X POST <URL>/chat \
+curl -i -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello"}'
 
 # 4. Có token — mong đợi 200 kèm câu trả lời
-curl -i -X POST <URL>/chat \
+curl -i -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $API_TOKEN" \
   -H "X-Client-Id: sv-test" \
@@ -61,7 +61,7 @@ curl -i -X POST <URL>/chat \
 
 # 5. Rate limit — gọi 15 lần, những lần cuối phải trả 429
 for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code} " -X POST <URL>/chat \
+  curl -s -o /dev/null -w "%{http_code} " -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $API_TOKEN" \
     -H "X-Client-Id: sv-test" \
@@ -74,7 +74,73 @@ done; echo
 Dán output của các lệnh trên vào đây:
 
 ```
-(điền output)
+(.venv) ryu@MacBook-Air-cua-Ryu K4-Day12-Cloud-Services-And-Deployment % curl -i https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/healthz
+
+HTTP/2 200 
+content-type: application/json
+date: Mon, 10 Aug 2026 09:18:01 GMT
+server: railway-hikari
+x-railway-request-id: PBlmSfbvSLiAEKmdjq4OvQ
+content-length: 64
+x-hikari-trace: sin1.tr00
+x-railway-edge: sin1
+
+{"status":"ok","service":"day12-chat-service","version":"1.0.0"}% 
+
+(.venv) ryu@MacBook-Air-cua-Ryu K4-Day12-Cloud-Services-And-Deployment % curl -i https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/readyz
+
+HTTP/2 200 
+content-type: application/json
+date: Mon, 10 Aug 2026 09:23:42 GMT
+server: railway-hikari
+x-railway-request-id: Qe4M6L0-RUmjw9P8nPRhug
+content-length: 31
+x-hikari-trace: sin1.tr00
+x-railway-edge: sin1
+
+{"status":"ready","redis":true}%   
+
+(.venv) ryu@MacBook-Air-cua-Ryu K4-Day12-Cloud-Services-And-Deployment % curl -i -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello"}'
+HTTP/2 401 
+content-type: application/json
+date: Mon, 10 Aug 2026 09:24:25 GMT
+server: railway-hikari
+www-authenticate: Bearer
+x-railway-request-id: vp_qi6ITR3uWFjiyWUN5dQ
+content-length: 44
+x-hikari-trace: sin1.nzn2
+x-railway-edge: sin1
+
+{"detail":"invalid or missing bearer token"}%
+
+(.venv) ryu@MacBook-Air-cua-Ryu K4-Day12-Cloud-Services-And-Deployment % curl -i -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $API_TOKEN" \
+  -H "X-Client-Id: sv-test" \
+  -d '{"message":"Deploy là gì?"}'
+HTTP/2 200 
+content-type: application/json
+date: Mon, 10 Aug 2026 09:26:38 GMT
+server: railway-hikari
+x-railway-request-id: 8JVp4wPAThqMFbURljLL4A
+content-length: 288
+x-hikari-trace: sin1.d1nj
+x-railway-edge: sin1
+vary: accept-encoding
+
+{"reply":"Câu hỏi hay. Deploy là gì thường được giải quyết bằng cách chuẩn hóa môi trường chạy: cùng một image chạy giống nhau ở laptop và trên cloud.","client_id":"sv-test","turns_before":0,"usd_cost":2.145e-05,"usage":{"prompt":3,"completion":35}}%                             
+
+(.venv) ryu@MacBook-Air-cua-Ryu K4-Day12-Cloud-Services-And-Deployment % for i in $(seq 1 15); do
+  curl -s -o /dev/null -w "%{http_code} " -X POST https://k4-day12-2a202601536-nguyenthanhlong-production.up.railway.app/chat \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $API_TOKEN" \
+    -H "X-Client-Id: sv-test" \
+    -d '{"message":"test"}'
+done; echo
+200 200 200 200 200 200 200 200 200 200 429 429 429 429 429 
+
 ```
 
 ## Ảnh Chụp Màn Hình
