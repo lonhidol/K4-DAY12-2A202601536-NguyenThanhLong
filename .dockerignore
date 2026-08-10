@@ -4,3 +4,7 @@
 
 .git
 .gitignore
+.env 
+.git
+__pycache__
+.venv

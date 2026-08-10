@@ -23,14 +23,35 @@
 #            docker images day12-chat:prod     # xem dung lượng
 # ═══════════════════════════════════════════════════════════════════
 
-FROM python:3.11
+# Stage 1: Builder (Cài đặt dependencies)
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: Runtime (Chạy ứng dụng)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy thư viện đã cài đặt từ stage builder
+COPY --from=builder /install /usr/local
+
+# Copy source code ứng dụng
 COPY . .
 
-RUN pip install -r requirements.txt
+# Tạo user thường không có quyền root
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
 
+ENV PORT=8000
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Healthcheck trỏ tới /healthz
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD python -c "import urllib.request, os; port = os.getenv('PORT', '8000'); urllib.request.urlopen(f'http://localhost:{port}/healthz')" || exit 1
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
